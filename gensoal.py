@@ -154,7 +154,7 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
             
             # Deteksi model yang tersedia secara otomatis
             daftar_model = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-            model_terpilih = "gemini-1.5-flash"
+            model_terpilih = "gemini-3.6-flash"
             for m in daftar_model:
                 if "flash" in m or "pro" in m:
                     model_terpilih = m
