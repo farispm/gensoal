@@ -1,4 +1,5 @@
 import io
+import re
 import streamlit as st
 import google.generativeai as genai
 from docx import Document
@@ -9,6 +10,13 @@ st.set_page_config(page_title="Generator Soal SD/MI AI", page_icon="📝", layou
 
 st.title("📝 Generator Soal SD/MI Berbasis AI Generatif")
 st.caption("Aplikasi pembuat naskah soal dinamis Kurikulum Merdeka & K13 untuk SD dan MI")
+
+# Fungsi Pembersih Format Markdown Inline untuk File Word
+def bersihkan_markdown_inline(teks):
+    # Menghapus simbol bold (**) dan italic (*) dari teks agar rapi di Word
+    teks_bersih = re.sub(r'\*\*(.*?)\*\*', r'\1', teks)
+    teks_bersih = re.sub(r'\*(.*?)\*', r'\1', teks_bersih)
+    return teks_bersih
 
 # Fungsi Konversi Teks Markdown ke Dokumen Word (.docx)
 def konversi_ke_docx(teks_md, judul="Naskah Soal"):
@@ -29,12 +37,13 @@ def konversi_ke_docx(teks_md, judul="Naskah Soal"):
         stripped = line.strip()
 
         # Deteksi Baris Tabel Markdown (| ... |)
-        if stripped.startswith('|') and stripped.endswith('|'):
+        if stripped.startswith('|') and '|' in stripped[1:]:
             if '---' in stripped:  # Lewati baris pembatas tabel
                 continue
-            cells = [c.strip() for c in stripped.split('|')[1:-1]]
-            table_data.append(cells)
-            in_table = True
+            cells = [bersihkan_markdown_inline(c.strip()) for c in stripped.split('|')[1:-1]]
+            if cells:
+                table_data.append(cells)
+                in_table = True
             continue
         else:
             # Jika keluar dari area tabel, cetak tabel ke dokumen Word
@@ -49,21 +58,24 @@ def konversi_ke_docx(teks_md, judul="Naskah Soal"):
                 table_data = []
                 in_table = False
 
+        # Bersihkan format inline untuk teks paragraf/judul
+        teks_paragraf = bersihkan_markdown_inline(stripped)
+
         # Deteksi Judul & Heading
         if stripped.startswith('# '):
-            doc.add_heading(stripped[2:], level=1)
+            doc.add_heading(teks_paragraf[2:], level=1)
         elif stripped.startswith('## '):
-            doc.add_heading(stripped[3:], level=2)
+            doc.add_heading(teks_paragraf[3:], level=2)
         elif stripped.startswith('### '):
-            doc.add_heading(stripped[4:], level=3)
+            doc.add_heading(teks_paragraf[4:], level=3)
         elif stripped.startswith('#### '):
-            doc.add_heading(stripped[5:], level=4)
+            doc.add_heading(teks_paragraf[5:], level=4)
         elif stripped.startswith('- ') or stripped.startswith('* '):
-            doc.add_paragraph(stripped[2:], style='List Bullet')
+            doc.add_paragraph(teks_paragraf[2:], style='List Bullet')
         elif stripped == '':
             continue
         else:
-            doc.add_paragraph(stripped)
+            doc.add_paragraph(teks_paragraf)
 
     # Cetak tabel jika berada di bagian akhir dokumen
     if in_table and table_data:
@@ -85,7 +97,16 @@ def konversi_ke_docx(teks_md, judul="Naskah Soal"):
 # Panel Samping - Konfigurasi Utama
 with st.sidebar:
     st.header("⚙️ Konfigurasi Utama")
-    api_key = st.text_input("Gemini API Key", type="password", help="Masukkan API Key Google Gemini Anda")
+    
+    # Memeriksa API key dari st.secrets jika ada, atau isi kunci default Anda di sini
+    default_key = st.secrets.get("GEMINI_API_KEY", "")
+    
+    api_key = st.text_input(
+        "Gemini API Key", 
+        value=default_key, 
+        type="password", 
+        help="Masukkan API Key Google Gemini Anda"
+    )
     
     kelas = st.selectbox("Tingkat Kelas", ["Kelas I", "Kelas II", "Kelas III", "Kelas IV", "Kelas V", "Kelas VI"])
     semester = st.radio("Semester", ["Ganjil", "Genap"], horizontal=True)
@@ -150,17 +171,9 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
         st.error("Pilih minimal satu tingkat kesulitan (Level Kognitif).")
     else:
         try:
+            # Konfigurasi API dengan Model Resmi Gemini 1.5 Flash
             genai.configure(api_key=api_key)
-            
-            # Deteksi model yang tersedia secara otomatis
-            daftar_model = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-            model_terpilih = "gemini-3.6-flash"
-            for m in daftar_model:
-                if "flash" in m or "pro" in m:
-                    model_terpilih = m
-                    break
-
-            model = genai.GenerativeModel(model_terpilih)
+            model = genai.GenerativeModel("gemini-1.5-flash")
             
             prompt_system = f"""
 Anda adalah pakar pembuat soal asesmen pendidikan dasar SD dan MI yang berpengalaman.
