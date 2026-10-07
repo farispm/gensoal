@@ -85,16 +85,7 @@ def konversi_ke_docx(teks_md, judul="Naskah Soal"):
 # Panel Samping - Konfigurasi Utama
 with st.sidebar:
     st.header("⚙️ Konfigurasi Utama")
-    
-    # Tempel API Key ASLI Anda di dalam tanda kutip di bawah ini
-    API_KEY_DEFAULT = "AQ.Ab8RN6JWlZxTNVYbDVVlHK9HaUV5BAFB2mzL4ZnM3sN6MZTamA"
-    
-    api_key = st.text_input(
-        "Gemini API Key", 
-        value=API_KEY_DEFAULT, 
-        type="password", 
-        help="Masukkan API Key Google Gemini Anda"
-    )
+    api_key = st.text_input("Gemini API Key", type="password", help="Masukkan API Key Google Gemini Anda")
     
     kelas = st.selectbox("Tingkat Kelas", ["Kelas I", "Kelas II", "Kelas III", "Kelas IV", "Kelas V", "Kelas VI"])
     semester = st.radio("Semester", ["Ganjil", "Genap"], horizontal=True)
