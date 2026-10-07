@@ -1,5 +1,8 @@
+import io
 import streamlit as st
 import google.generativeai as genai
+from docx import Document
+from docx.shared import Inches, Pt
 
 # Konfigurasi Halaman Web
 st.set_page_config(page_title="Generator Soal SD/MI AI", page_icon="📝", layout="wide")
@@ -7,9 +10,81 @@ st.set_page_config(page_title="Generator Soal SD/MI AI", page_icon="📝", layou
 st.title("📝 Generator Soal SD/MI Berbasis AI Generatif")
 st.caption("Aplikasi pembuat naskah soal dinamis Kurikulum Merdeka & K13 untuk SD dan MI")
 
+# Fungsi Konversi Teks Markdown ke Dokumen Word (.docx)
+def konversi_ke_docx(teks_md, judul="Naskah Soal"):
+    doc = Document()
+    
+    # Atur Margin Halaman (1 Inci / 2.54 cm)
+    for section in doc.sections:
+        section.top_margin = Inches(1)
+        section.bottom_margin = Inches(1)
+        section.left_margin = Inches(1)
+        section.right_margin = Inches(1)
+
+    lines = teks_md.split('\n')
+    in_table = False
+    table_data = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Deteksi Baris Tabel Markdown (| ... |)
+        if stripped.startswith('|') and stripped.endswith('|'):
+            if '---' in stripped:  # Lewati baris pembatas tabel
+                continue
+            cells = [c.strip() for c in stripped.split('|')[1:-1]]
+            table_data.append(cells)
+            in_table = True
+            continue
+        else:
+            # Jika keluar dari area tabel, cetak tabel ke dokumen Word
+            if in_table and table_data:
+                cols = max(len(r) for r in table_data)
+                table = doc.add_table(rows=len(table_data), cols=cols)
+                table.style = 'Table Grid'
+                for r_idx, row in enumerate(table_data):
+                    for c_idx, val in enumerate(row):
+                        if c_idx < cols:
+                            table.cell(r_idx, c_idx).text = val
+                table_data = []
+                in_table = False
+
+        # Deteksi Judul & Heading
+        if stripped.startswith('# '):
+            doc.add_heading(stripped[2:], level=1)
+        elif stripped.startswith('## '):
+            doc.add_heading(stripped[3:], level=2)
+        elif stripped.startswith('### '):
+            doc.add_heading(stripped[4:], level=3)
+        elif stripped.startswith('#### '):
+            doc.add_heading(stripped[5:], level=4)
+        elif stripped.startswith('- ') or stripped.startswith('* '):
+            doc.add_paragraph(stripped[2:], style='List Bullet')
+        elif stripped == '':
+            continue
+        else:
+            doc.add_paragraph(stripped)
+
+    # Cetak tabel jika berada di bagian akhir dokumen
+    if in_table and table_data:
+        cols = max(len(r) for r in table_data)
+        table = doc.add_table(rows=len(table_data), cols=cols)
+        table.style = 'Table Grid'
+        for r_idx, row in enumerate(table_data):
+            for c_idx, val in enumerate(row):
+                if c_idx < cols:
+                    table.cell(r_idx, c_idx).text = val
+
+    # Simpan ke byte stream
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+    return file_stream
+
+
 # Panel Samping - Konfigurasi Utama
 with st.sidebar:
-    st.header("⚙️ Konfigurasi Mata Pelajaran")
+    st.header("⚙️ Konfigurasi Utama")
     api_key = st.text_input("Gemini API Key", type="password", help="Masukkan API Key Google Gemini Anda")
     
     kelas = st.selectbox("Tingkat Kelas", ["Kelas I", "Kelas II", "Kelas III", "Kelas IV", "Kelas V", "Kelas VI"])
@@ -76,7 +151,16 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-3.6-flash")
+            
+            # Deteksi model yang tersedia secara otomatis
+            daftar_model = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            model_terpilih = "gemini-1.5-flash"
+            for m in daftar_model:
+                if "flash" in m or "pro" in m:
+                    model_terpilih = m
+                    break
+
+            model = genai.GenerativeModel(model_terpilih)
             
             prompt_system = f"""
 Anda adalah pakar pembuat soal asesmen pendidikan dasar SD dan MI yang berpengalaman.
@@ -116,11 +200,28 @@ STRUKTUR KELUARAN (MARKDOWN):
             st.success("✨ Naskah Soal Berhasil Dibuat!")
             st.markdown(response.text)
             
-            st.download_button(
-                label="📥 Download Naskah Soal (.md)",
-                data=response.text,
-                file_name=f"Soal_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.md",
-                mime="text/markdown"
-            )
+            # Membuat File Word (.docx)
+            file_docx = konversi_ke_docx(response.text, judul=f"Soal_{mapel}_{kelas}")
+            
+            # Tombol Download
+            col_dl1, col_dl2 = st.columns(2)
+            with col_dl1:
+                st.download_button(
+                    label="📄 Download Naskah Word (.docx)",
+                    data=file_docx,
+                    file_name=f"Soal_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    type="primary",
+                    use_container_width=True
+                )
+            with col_dl2:
+                st.download_button(
+                    label="📥 Download Naskah Markdown (.md)",
+                    data=response.text,
+                    file_name=f"Soal_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.md",
+                    mime="text/markdown",
+                    use_container_width=True
+                )
+                
         except Exception as err:
             st.error(f"Terjadi kesalahan pada sistem AI: {str(err)}")
