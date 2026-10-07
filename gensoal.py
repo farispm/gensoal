@@ -173,7 +173,7 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
         try:
             # Konfigurasi API dengan Model Resmi Gemini 1.5 Flash
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-3.6-flash")
             
             prompt_system = f"""
 Anda adalah pakar pembuat soal asesmen pendidikan dasar SD dan MI yang berpengalaman.
