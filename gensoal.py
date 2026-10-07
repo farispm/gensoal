@@ -11,9 +11,16 @@ st.set_page_config(page_title="Generator Soal SD/MI AI", page_icon="📝", layou
 st.title("📝 Generator Soal SD/MI Berbasis AI Generatif")
 st.caption("Aplikasi pembuat naskah soal dinamis Kurikulum Merdeka & K13 untuk SD dan MI")
 
-# Fungsi Pembersih Format Markdown Inline untuk File Word
+# Fungsi Pembersih Format Markdown Inline & LaTeX untuk File Word
 def bersihkan_markdown_inline(teks):
-    # Menghapus simbol bold (**) dan italic (*) dari teks agar rapi di Word
+    # Mengonversi kode LaTeX panah & matematika ke karakter Unicode resmi
+    teks = re.sub(r'\$\\rightarrow\$|\\rightarrow', '→', teks)
+    teks = re.sub(r'\$\\leftarrow\$|\\leftarrow', '←', teks)
+    teks = re.sub(r'\$\\times\$|\\times', '×', teks)
+    teks = re.sub(r'\$\\div\$|\\div', '÷', teks)
+    teks = teks.replace('$', '')  # Hapus tanda dolar sisa LaTeX
+
+    # Menghapus simbol markdown bold (**) dan italic (*) dari teks
     teks_bersih = re.sub(r'\*\*(.*?)\*\*', r'\1', teks)
     teks_bersih = re.sub(r'\*(.*?)\*', r'\1', teks_bersih)
     return teks_bersih
@@ -98,7 +105,7 @@ def konversi_ke_docx(teks_md, judul="Naskah Soal"):
 with st.sidebar:
     st.header("⚙️ Konfigurasi Utama")
     
-    # Memeriksa API key dari st.secrets jika ada, atau isi kunci default Anda di sini
+    # Memeriksa API key dari st.secrets jika ada, atau gunakan default
     default_key = st.secrets.get("GEMINI_API_KEY", "")
     
     api_key = st.text_input(
@@ -173,20 +180,37 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
         try:
             # Konfigurasi API dengan Model Resmi Gemini 1.5 Flash
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-3.6-flash")
+            model = genai.GenerativeModel("gemini-1.5-flash")
             
             prompt_system = f"""
-Anda adalah pakar pembuat soal asesmen pendidikan dasar SD dan MI yang berpengalaman.
+Anda adalah pakar penyusun soal Asesmen Kurikulum Merdeka SD/MI yang sangat teliti.
 Tugas Anda adalah menyusun naskah soal asesmen yang autentik, variatif, dan kontekstual.
 DILARANG menggunakan pola kaku atau template berulang.
 
-SPESIFIKASI ASESMEN:
-- Tingkat: {kelas} | Semester: {semester}
-- Mata Pelajaran: {mapel}
-- Materi Spesifik: {materi if materi else 'Menyesuaikan Kurikulum Merdeka/K13 standar untuk mapel dan kelas ini'}
-- Capaian Pembelajaran (CP): {cp if cp else 'Menyesuaikan indikator CP standar nasional'}
-- Level Kognitif Terintegrasi: {', '.join(level_kognitif)}
-- Penggunaan Gambar: {'Aktif. Untuk soal yang memerlukan visual, sertakan petunjuk [DESKRIPSI GAMBAR: deskripsi detail objek visual yang harus ditampilkan guru]' if opsi_gambar else 'Tidak menggunakan gambar.'}
+BATASAN KETAT KELAYAKAN SOAL SD/MI:
+1. FOKUS MATERI TERARAH (TIDAK DICAMPUR ACAK):
+   - Mata Pelajaran: {mapel} (Kelas: {kelas}, Semester: {semester})
+   - Materi Spesifik: {materi if materi else 'Pilih HANYA 1 Bab/Topik utama yang paling dominan untuk kelas dan semester ini. DILARANG mencampur bab Sains dan IPS dalam satu paket soal jika tidak diminta.'}
+   - Capaian Pembelajaran: {cp if cp else 'Sesuai indikator CP Kurikulum Merdeka SD'}
+
+2. TINGKAT KEDALAMAN BAHASA SD:
+   - Gunakan bahasa yang mudah dipahami anak usia SD ({kelas}).
+   - HINDARI istilah biologi/sains tingkat SMP/SMA yang terlalu rumit (seperti cerebellum, diartrosis, saraf otonom, dll.).
+   - Gunakan istilah standar buku teks SD (misal: otak kecil, sendi gerak, tulang, otot).
+
+3. KEBENARAN KONSEP DAN FAKTA ILMIAH:
+   - Pastikan seluruh opsi jawaban dan pernyataan benar secara ilmiah dan tidak bertentangan secara konsep (misal: otot polos bekerja secara tidak sadar).
+
+4. BATASAN FORMAT TEKS (SANGAT PENTING):
+   - DILARANG KERAS menggunakan kode LaTeX (seperti $...$, \\rightarrow, \\times, \\div, dll.).
+   - Gunakan simbol karakter langsung untuk panah (→) dan operasi matematika biasa (×, ÷, +, -).
+
+5. RELEVANSI SOAL GAMBAR:
+   - Penggunaan Gambar: {'Aktif. Untuk soal yang memerlukan visual, sertakan petunjuk [DESKRIPSI GAMBAR: deskripsi detail objek visual yang harus ditampilkan guru]' if opsi_gambar else 'Tidak menggunakan gambar.'}
+   - Jika fitur gambar aktif, pastikan pertanyaan berkaitan langsung dengan data/informasi yang dapat diamati dari deskripsi gambar.
+
+6. LEVEL KOGNITIF:
+   - Integrasikan level: {', '.join(level_kognitif)}
 
 KOMPOSISI SOAL:
 1. Pilihan Ganda: {jml_pg} soal, tiap soal memiliki {opsi_pg} opsi jawaban (A, B, C, dst.).
