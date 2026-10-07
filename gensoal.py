@@ -85,9 +85,13 @@ def konversi_ke_docx(teks_md, judul="Naskah Soal"):
 # Panel Samping - Konfigurasi Utama
 with st.sidebar:
     st.header("⚙️ Konfigurasi Utama")
+    
+    # Tempel API Key ASLI Anda di dalam tanda kutip di bawah ini
+    API_KEY_DEFAULT = "AQ.Ab8RN6JWlZxTNVYbDVVlHK9HaUV5BAFB2mzL4ZnM3sN6MZTamA"
+    
     api_key = st.text_input(
         "Gemini API Key", 
-        value="AQ.Ab8RN6JWlZxTNVYbDVVlHK9HaUV5BAFB2mzL4ZnM3sN6MZTamA",  # <-- Ganti dengan API Key Anda
+        value=API_KEY_DEFAULT, 
         type="password", 
         help="Masukkan API Key Google Gemini Anda"
     )
