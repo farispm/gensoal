@@ -11,6 +11,10 @@ st.set_page_config(page_title="Generator Soal SD/MI AI", page_icon="📝", layou
 st.title("📝 Generator Soal SD/MI Berbasis AI Generatif")
 st.caption("Aplikasi pembuat naskah soal dinamis Kurikulum Merdeka & K13 untuk SD dan MI")
 
+# Inisialisasi Session State agar data tidak hilang saat interaksi/download
+if "generated_text" not in st.session_state:
+    st.session_state.generated_text = None
+
 # Fungsi Pembersih Format Markdown Inline & LaTeX untuk File Word
 def bersihkan_markdown_inline(teks):
     # Mengonversi kode LaTeX panah & matematika ke karakter Unicode resmi
@@ -115,6 +119,11 @@ with st.sidebar:
         help="Masukkan API Key Google Gemini Anda"
     )
     
+    jenis_ujian = st.selectbox(
+        "Jenis Ujian", 
+        ["Sumatif Harian", "Sumatif Tengah Semester", "Sumatif Akhir Semester"]
+    )
+    
     kelas = st.selectbox("Tingkat Kelas", ["Kelas I", "Kelas II", "Kelas III", "Kelas IV", "Kelas V", "Kelas VI"])
     semester = st.radio("Semester", ["Ganjil", "Genap"], horizontal=True)
     
@@ -131,6 +140,12 @@ with st.sidebar:
     )
     
     opsi_gambar = st.checkbox("Sertakan Soal Berbasis Gambar / Ilustrasi", value=False)
+    
+    st.markdown("---")
+    instruksi_manual = st.text_area(
+        "Instruksi Khusus Tambahan (Opsional)", 
+        placeholder="Contoh: berikan gambar hanya pada nomor 2 dan 3 saja"
+    )
 
 # Form Input Utama
 st.subheader("📌 Materi & Capaian Pembelajaran (Opsional)")
@@ -180,16 +195,19 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
         try:
             # Konfigurasi API dengan Model Resmi Gemini Flash
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-3.5-flash-lite")
+            model = genai.GenerativeModel("gemini-2.5-flash")
             
             prompt_system = f"""
 Anda adalah pakar penyusun soal Asesmen Kurikulum Merdeka SD/MI yang sangat teliti.
 Tugas Anda adalah menyusun naskah soal asesmen yang autentik, variatif, dan kontekstual.
 DILARANG menggunakan pola kaku atau template berulang.
 
+INFORMASI UJIAN:
+- Jenis Ujian: {jenis_ujian}
+- Mata Pelajaran: {mapel} (Kelas: {kelas}, Semester: {semester})
+
 BATASAN KETAT KELAYAKAN SOAL SD/MI:
 1. FOKUS MATERI TERARAH (TIDAK DICAMPUR ACAK):
-   - Mata Pelajaran: {mapel} (Kelas: {kelas}, Semester: {semester})
    - Materi Spesifik: {materi if materi else 'Pilih HANYA 1 Bab/Topik utama yang paling dominan untuk kelas dan semester ini. DILARANG mencampur bab Sains dan IPS dalam satu paket soal jika tidak diminta.'}
    - Capaian Pembelajaran: {cp if cp else 'Sesuai indikator CP Kurikulum Merdeka SD'}
 
@@ -199,7 +217,7 @@ BATASAN KETAT KELAYAKAN SOAL SD/MI:
    - Gunakan istilah standar buku teks SD (misal: otak kecil, sendi gerak, tulang, otot).
 
 3. KEBENARAN KONSEP DAN FAKTA ILMIAH:
-   - Pastikan seluruh opsi jawaban dan pernyataan benar secara ilmiah dan tidak bertentangan secara konsep (misal: otot polos bekerja secara tidak sadar).
+   - Pastikan seluruh opsi jawaban dan pernyataan benar secara ilmiah dan tidak bertentangan secara konsep.
 
 4. BATASAN FORMAT TEKS (SANGAT PENTING):
    - DILARANG KERAS menggunakan kode LaTeX (seperti $...$, \\rightarrow, \\times, \\div, dll.).
@@ -209,7 +227,10 @@ BATASAN KETAT KELAYAKAN SOAL SD/MI:
    - Penggunaan Gambar: {'Aktif. Untuk soal yang memerlukan visual, sertakan petunjuk [DESKRIPSI GAMBAR: deskripsi detail objek visual yang harus ditampilkan guru]' if opsi_gambar else 'Tidak menggunakan gambar.'}
    - Jika fitur gambar aktif, pastikan pertanyaan berkaitan langsung dengan data/informasi yang dapat diamati dari deskripsi gambar.
 
-6. LEVEL KOGNITIF:
+6. INSTRUKSI MANUAL TAMBAHAN DARI GURU:
+   {instruksi_manual if instruksi_manual else 'Tidak ada instruksi khusus tambahan.'}
+
+7. LEVEL KOGNITIF:
    - Integrasikan level: {', '.join(level_kognitif)}
 
 KOMPOSISI SOAL:
@@ -233,32 +254,35 @@ STRUKTUR KELUARAN (MARKDOWN):
 """
             with st.spinner("AI sedang mendesain naskah soal variatif & kisi-kisi... Mohon tunggu..."):
                 response = model.generate_content(prompt_system)
-                
-            st.success("✨ Naskah Soal Berhasil Dibuat!")
-            st.markdown(response.text)
-            
-            # Membuat File Word (.docx)
-            file_docx = konversi_ke_docx(response.text, judul=f"Soal_{mapel}_{kelas}")
-            
-            # Tombol Download
-            col_dl1, col_dl2 = st.columns(2)
-            with col_dl1:
-                st.download_button(
-                    label="📄 Download Naskah Word (.docx)",
-                    data=file_docx,
-                    file_name=f"Soal_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    type="primary",
-                    use_container_width=True
-                )
-            with col_dl2:
-                st.download_button(
-                    label="📥 Download Naskah Markdown (.md)",
-                    data=response.text,
-                    file_name=f"Soal_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.md",
-                    mime="text/markdown",
-                    use_container_width=True
-                )
+                st.session_state.generated_text = response.text
                 
         except Exception as err:
             st.error(f"Terjadi kesalahan pada sistem AI: {str(err)}")
+
+# Tampilkan hasil jika sudah ada di session_state
+if st.session_state.generated_text:
+    st.success("✨ Naskah Soal Siap!")
+    st.markdown(st.session_state.generated_text)
+    
+    # Membuat File Word (.docx)
+    file_docx = konversi_ke_docx(st.session_state.generated_text, judul=f"Soal_{mapel}_{kelas}")
+    
+    # Tombol Download
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
+        st.download_button(
+            label="📄 Download Naskah Word (.docx)",
+            data=file_docx,
+            file_name=f"{jenis_ujian.replace(' ', '_')}_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            type="primary",
+            use_container_width=True
+        )
+    with col_dl2:
+        st.download_button(
+            label="📥 Download Naskah Markdown (.md)",
+            data=st.session_state.generated_text,
+            file_name=f"{jenis_ujian.replace(' ', '_')}_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.md",
+            mime="text/markdown",
+            use_container_width=True
+        )
