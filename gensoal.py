@@ -144,7 +144,7 @@ with st.sidebar:
     st.markdown("---")
     instruksi_manual = st.text_area(
         "Instruksi Khusus Tambahan (Opsional)", 
-        placeholder="Contoh: berikan gambar hanya pada nomor 2 dan 3 saja"
+        placeholder="Contoh: berikan gambar hanya pada nomor 2 dan 3 saja/khusus menjodohkan materi lokomotor dan non lokomoror/soal nomor 3 dengan stimulus"
     )
 
 # Form Input Utama
@@ -206,26 +206,31 @@ INFORMASI UJIAN:
 - Jenis Ujian: {jenis_ujian}
 - Mata Pelajaran: {mapel} (Kelas: {kelas}, Semester: {semester})
 
+ATURAN KERAHASIAAN KUNCI JAWABAN (SANGAT PENTING):
+1. DILARANG KERAS menuliskan kunci jawaban, tanda panah penghubung jawaban, atau petunjuk pasangan yang benar langsung di bagian lembar soal siswa.
+2. Khusus untuk soal **Menjodohkan**: 
+   - Buat tabel soal yang terpisah antara Kolom Pertanyaan (Lajur Kiri) dan Kolom Opsi Acak (Lajur Kanan, diurutkan secara acak dengan huruf/angka misal A, B, C, D atau 1, 2, 3, 4).
+   - Jangan menyambungkan atau memasangkan langsung kunci jawaban pada tabel soal siswa. 
+   - Kunci jawaban yang tepat untuk soal menjodohkan HANYA dituliskan di bagian akhir pada bagian "Kunci Jawaban & Pedoman Penskoran".
+
 BATASAN KETAT KELAYAKAN SOAL SD/MI:
 1. FOKUS MATERI TERARAH (TIDAK DICAMPUR ACAK):
-   - Materi Spesifik: {materi if materi else 'Pilih HANYA 1 Bab/Topik utama yang paling dominan untuk kelas dan semester ini. DILARANG mencampur bab Sains dan IPS dalam satu paket soal jika tidak diminta.'}
+   - Materi Spesifik: {materi if materi else 'Pilih HANYA 1 Bab/Topik utama yang paling dominan untuk kelas dan semester ini.'}
    - Capaian Pembelajaran: {cp if cp else 'Sesuai indikator CP Kurikulum Merdeka SD'}
 
 2. TINGKAT KEDALAMAN BAHASA SD:
    - Gunakan bahasa yang mudah dipahami anak usia SD ({kelas}).
-   - HINDARI istilah biologi/sains tingkat SMP/SMA yang terlalu rumit (seperti cerebellum, diartrosis, saraf otonom, dll.).
-   - Gunakan istilah standar buku teks SD (misal: otak kecil, sendi gerak, tulang, otot).
+   - HINDARI istilah biologi/sains tingkat SMP/SMA yang terlalu rumit.
 
 3. KEBENARAN KONSEP DAN FAKTA ILMIAH:
-   - Pastikan seluruh opsi jawaban dan pernyataan benar secara ilmiah dan tidak bertentangan secara konsep.
+   - Pastikan seluruh opsi jawaban dan pernyataan benar secara ilmiah.
 
-4. BATASAN FORMAT TEKS (SANGAT PENTING):
+4. BATASAN FORMAT TEKS:
    - DILARANG KERAS menggunakan kode LaTeX (seperti $...$, \\rightarrow, \\times, \\div, dll.).
    - Gunakan simbol karakter langsung untuk panah (→) dan operasi matematika biasa (×, ÷, +, -).
 
 5. RELEVANSI SOAL GAMBAR:
-   - Penggunaan Gambar: {'Aktif. Untuk soal yang memerlukan visual, sertakan petunjuk [DESKRIPSI GAMBAR: deskripsi detail objek visual yang harus ditampilkan guru]' if opsi_gambar else 'Tidak menggunakan gambar.'}
-   - Jika fitur gambar aktif, pastikan pertanyaan berkaitan langsung dengan data/informasi yang dapat diamati dari deskripsi gambar.
+   - Penggunaan Gambar: {'Aktif. Untuk soal yang memerlukan visual, sertakan petunjuk [DESKRIPSI GAMBAR: deskripsi detail objek visual]' if opsi_gambar else 'Tidak menggunakan gambar.'}
 
 6. INSTRUKSI MANUAL TAMBAHAN DARI GURU:
    {instruksi_manual if instruksi_manual else 'Tidak ada instruksi khusus tambahan.'}
@@ -235,9 +240,9 @@ BATASAN KETAT KELAYAKAN SOAL SD/MI:
 
 KOMPOSISI SOAL:
 1. Pilihan Ganda: {jml_pg} soal, tiap soal memiliki {opsi_pg} opsi jawaban (A, B, C, dst.).
-2. Pilihan Ganda Kompleks: {jml_pgk} soal, tiap soal memiliki {pernyataan_pgk} pernyataan (jawaban benar lebih dari satu).
-3. Benar / Salah: {jml_bs} soal, tiap nomor terdiri dari {pernyataan_bs} pernyataan untuk dinilai Benar/Salah.
-4. Menjodohkan: {jml_jodoh} paket soal, tiap paket memiliki {pasangan_jodoh} pernyataan lajur kiri dan {pasangan_jodoh} pilihan lajur kanan.
+2. Pilihan Ganda Kompleks: {jml_pgk} soal, tiap soal memiliki {pernyataan_pgk} pernyataan.
+3. Benar / Salah: {jml_bs} soal, tiap nomor terdiri dari {pernyataan_bs} pernyataan.
+4. Menjodohkan: {jml_jodoh} paket soal, tiap paket memiliki {pasangan_jodoh} pernyataan lajur kiri dan {pasangan_jodoh} pilihan lajur kanan yang diacak (TANPA KUNCI JAWABAN DI SOAL).
 5. Isian Singkat: {jml_isian} soal.
 6. Uraian / Essay: {jml_uraian} soal.
 
@@ -246,10 +251,10 @@ STRUKTUR KELUARAN (MARKDOWN):
 2. Bagian A: Pilihan Ganda
 3. Bagian B: Pilihan Ganda Kompleks
 4. Bagian C: Benar / Salah
-5. Bagian D: Menjodohkan (Format Tabel)
+5. Bagian D: Menjodohkan (Hanya tabel soal & pilihan acak, TANPA kunci jawaban/pasangan langsung)
 6. Bagian E: Isian Singkat
 7. Bagian F: Uraian
-8. Kunci Jawaban & Pedoman Penskoran/Rubrik
+8. Kunci Jawaban & Pedoman Penskoran/Rubrik (Termasuk pasangan lengkap untuk soal Menjodohkan)
 9. Tabel Kisi-Kisi Soal (Nomor Soal, CP/Materi, Indikator Soal, Bentuk Soal, Level Kognitif L1/L2/L3).
 """
             with st.spinner("AI sedang mendesain naskah soal variatif & kisi-kisi... Mohon tunggu..."):
