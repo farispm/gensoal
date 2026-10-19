@@ -147,13 +147,13 @@ with st.sidebar:
     opsi_pengecoh_jodoh = st.checkbox(
         "Sertakan Pengecoh (Distraktor) pada Opsi Menjodohkan", 
         value=False, 
-        help="Jika dicentang, jumlah opsi jawaban di lajur kanan akan lebih banyak daripada jumlah pertanyaan (menambahkan opsi pengecoh yang tidak berpasangan)."
+        help="Jika dicentang, jumlah opsi jawaban di lajur kanan bertambah satu daripada jumlah pertanyaan (menambahkan opsi pengecoh yang tidak berpasangan)."
     )
     
     st.markdown("---")
     instruksi_manual = st.text_area(
         "Instruksi Khusus Tambahan (Opsional)", 
-        placeholder="Contoh: berikan gambar hanya pada nomor 2 dan 3 saja/khusus menjodohkan materi lokomotor dan non lokomoror/soal nomor 3 dengan stimulus"
+        placeholder="Contoh: berikan gambar hanya pada nomor 2 dan 3 saja/khusus menjodohkan materi lokomotor dan non lokomotor/soal nomor 3 dengan stimulus"
     )
 
 # Form Input Utama
