@@ -195,7 +195,7 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
         try:
             # Konfigurasi API dengan Model Resmi Gemini Flash
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.5-flash")
+            model = genai.GenerativeModel("gemini-3.5-flash-lite")
             
             prompt_system = f"""
 Anda adalah pakar penyusun soal Asesmen Kurikulum Merdeka SD/MI yang sangat teliti.
