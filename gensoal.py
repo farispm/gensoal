@@ -9,7 +9,7 @@ from docx.shared import Inches, Pt
 st.set_page_config(page_title="Generator Soal SD/MI AI", page_icon="📝", layout="wide")
 
 st.title("📝 Generator Soal SD/MI Berbasis AI Generatif")
-st.caption("Aplikasi pembuat naskah soal dinamis Kurikulum Merdeka & K13 untuk SD dan MI")
+st.caption("Aplikasi pembuat naskah soal dinamis berbasis Kurikulum Merdeka, K13, dan Kurikulum Berbasis Cinta (KBC) untuk SD dan MI")
 
 # Inisialisasi Session State agar data tidak hilang saat interaksi/download
 if "generated_text" not in st.session_state:
@@ -119,6 +119,11 @@ with st.sidebar:
         help="Masukkan API Key Google Gemini Anda"
     )
     
+    kurikulum = st.selectbox(
+        "Pilihan Kurikulum",
+        ["Kurikulum Merdeka", "Kurikulum 2013 (K13)", "Kurikulum Berbasis Cinta (KBC)"]
+    )
+
     jenis_ujian = st.selectbox(
         "Jenis Ujian", 
         ["Sumatif Harian", "Sumatif Tengah Semester", "Sumatif Akhir Semester"]
@@ -161,7 +166,7 @@ with st.sidebar:
 st.subheader("📌 Materi & Capaian Pembelajaran (Opsional)")
 col_m1, col_m2 = st.columns(2)
 with col_m1:
-    materi = st.text_area("Materi / Bab Pembahasan", placeholder="Contoh: Bab 3 - Daur Hidup Makhluk Hidup")
+    materi = st.text_area("Materi / Bab Pembahasan", placeholder="Contoh: Bab 3 - Daur Hidup Makhluk Hidup / Nilai Kasih Sayang & Empati")
 with col_m2:
     cp = st.text_area("Capaian Pembelajaran (CP) / Tujuan Pembelajaran (TP)", placeholder="Contoh: Peserta didik dapat menganalisis siklus hidup hewan...")
 
@@ -214,12 +219,20 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
             else:
                 aturan_pengecoh_jodoh = f"- Untuk soal Menjodohkan, jumlah pilihan di lajur kanan sama persis dengan jumlah pertanyaan di lajur kiri ({pasangan_jodoh} pilihan) tanpa ada pengecoh."
 
+            # Penyesuaian khusus jika Kurikulum Berbasis Cinta (KBC) dipilih
+            karakteristik_kurikulum = (
+                "Kurikulum Berbasis Cinta (KBC) yang menekankan pendekatan afektif, penanaman nilai-nilai kasih sayang, empati, kepedulian sosial, budi pekerti luhur, dan iklim belajar yang menyenangkan serta bermakna bagi siswa."
+                if kurikulum == "Kurikulum Berbasis Cinta (KBC)"
+                else f"{kurikulum} standar untuk SD/MI."
+            )
+
             prompt_system = f"""
-Anda adalah pakar penyusun soal Asesmen Kurikulum Merdeka SD/MI yang sangat teliti.
+Anda adalah pakar penyusun soal Asesmen {kurikulum} SD/MI yang sangat teliti.
 Tugas Anda adalah menyusun naskah soal asesmen yang autentik, variatif, dan kontekstual.
 DILARANG menggunakan pola kaku atau template berulang.
 
 INFORMASI UJIAN:
+- Kurikulum: {kurikulum} ({karakteristik_kurikulum})
 - Jenis Ujian: {jenis_ujian}
 - Mata Pelajaran: {mapel} (Kelas: {kelas}, Semester: {semester})
 
@@ -234,7 +247,7 @@ ATURAN KERAHASIAAN KUNCI JAWABAN (SANGAT PENTING):
 BATASAN KETAT KELAYAKAN SOAL SD/MI:
 1. FOKUS MATERI TERARAH (TIDAK DICAMPUR ACAK):
    - Materi Spesifik: {materi if materi else 'Pilih HANYA 1 Bab/Topik utama yang paling dominan untuk kelas dan semester ini.'}
-   - Capaian Pembelajaran: {cp if cp else 'Sesuai indikator CP Kurikulum Merdeka SD'}
+   - Capaian Pembelajaran / Tujuan Pembelajaran: {cp if cp else 'Sesuai indikator pencapaian kompetensi SD/MI'}
 
 2. TINGKAT KEDALAMAN BAHASA SD:
    - Gunakan bahasa yang mudah dipahami anak usia SD ({kelas}).
@@ -275,7 +288,7 @@ STRUKTUR KELUARAN (MARKDOWN):
 8. Kunci Jawaban & Pedoman Penskoran/Rubrik (Termasuk pasangan lengkap untuk soal Menjodohkan dan penjelasan mana opsi yang bertindak sebagai pengecoh)
 9. Tabel Kisi-Kisi Soal (Nomor Soal, CP/Materi, Indikator Soal, Bentuk Soal, Level Kognitif L1/L2/L3).
 """
-            with st.spinner("AI sedang mendesain naskah soal variatif & kisi-kisi... Mohon tunggu..."):
+            with st.spinner("AI sedang mendesain naskah soal variatif & kisi-kisi berbasis Kurikulum... Mohon tunggu..."):
                 response = model.generate_content(prompt_system)
                 st.session_state.generated_text = response.text
                 
@@ -305,7 +318,7 @@ if st.session_state.generated_text:
         st.download_button(
             label="📥 Download Naskah Markdown (.md)",
             data=st.session_state.generated_text,
-            file_name=f"{jenis_ujian.replace(' ', '_')}_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.md",
+            file_name=f"{jenis_ujian.range(' ', '_') if hasattr(jenis_ujian, 'range') else jenis_ujian.replace(' ', '_')}_{mapel.replace(' ', '_')}_{kelas.replace(' ', '_')}.md",
             mime="text/markdown",
             use_container_width=True
         )
