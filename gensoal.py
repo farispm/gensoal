@@ -141,19 +141,20 @@ with st.sidebar:
     
     opsi_gambar = st.checkbox("Sertakan Soal Berbasis Gambar / Ilustrasi", value=False)
     
-    # Penambahan Opsi Centang untuk Jawaban Pengecoh Menjodohkan
+    # Penambahan Opsi Pilihan Jumlah Pengecoh Menjodohkan (0, 1, atau 2 pengecoh)
     st.markdown("---")
     st.markdown("🔀 **Pengaturan Khusus Menjodohkan**")
-    opsi_pengecoh_jodoh = st.checkbox(
-        "Sertakan Pengecoh (Distraktor) pada Opsi Menjodohkan", 
-        value=False, 
-        help="Jika dicentang, jumlah opsi jawaban di lajur kanan bertambah satu daripada jumlah pertanyaan (menambahkan opsi pengecoh yang tidak berpasangan)."
+    jumlah_pengecoh_jodoh = st.selectbox(
+        "Jumlah Pengecoh (Distraktor) Lajur Kanan",
+        [0, 1, 2],
+        index=1,
+        help="Pilih berapa banyak tambahan opsi pengecoh di lajur kanan yang tidak memiliki pasangan."
     )
     
     st.markdown("---")
     instruksi_manual = st.text_area(
         "Instruksi Khusus Tambahan (Opsional)", 
-        placeholder="Contoh: berikan gambar hanya pada nomor 2 dan 3 saja/khusus menjodohkan materi lokomotor dan non lokomotor/soal nomor 3 dengan stimulus"
+        placeholder="Contoh: berikan gambar hanya pada nomor 2 dan 3 saja/khusus menjodohkan materi lokomotor dan non lokomoror/soal nomor 3 dengan stimulus"
     )
 
 # Form Input Utama
@@ -206,12 +207,12 @@ if st.button("🚀 Buat Naskah Soal & Kunci Jawaban", type="primary", use_contai
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel("gemini-3.5-flash-lite")
             
-            # Instruksi tambahan terkait pengecoh menjodohkan
-            aturan_pengecoh_jodoh = (
-                f"- Untuk soal Menjodohkan, WAJIB sertakan jawaban pengecoh (distraktor) di lajur kanan sehingga jumlah pilihan di lajur kanan lebih banyak daripada jumlah pertanyaan di lajur kiri (misal: ada {pasangan_jodoh} pertanyaan di kiri, maka buat minimal {pasangan_jodoh + 2} pilihan di kanan di mana ada 2 pilihan pengecoh yang tidak memiliki pasangan)."
-                if opsi_pengecoh_jodoh
-                else f"- Untuk soal Menjodohkan, jumlah pilihan di lajur kanan sama persis dengan jumlah pertanyaan di lajur kiri ({pasangan_jodoh} pilihan)."
-            )
+            # Pengaturan aturan jumlah pengecoh menjodohkan berdasarkan selectbox
+            total_opsi_kanan = pasangan_jodoh + jumlah_pengecoh_jodoh
+            if jumlah_pengecoh_jodoh > 0:
+                aturan_pengecoh_jodoh = f"- Untuk soal Menjodohkan, WAJIB sertakan tepat {jumlah_pengecoh_jodoh} pilihan pengecoh (distraktor) di lajur kanan, sehingga jumlah pertanyaan di lajur kiri adalah {pasangan_jodoh} buah, sedangkan total opsi pilihan di lajur kanan adalah {total_opsi_kanan} buah ({pasangan_jodoh} opsi pasangan yang benar dan {jumlah_pengecoh_jodoh} opsi pengecoh yang tidak memiliki pasangan sama sekali)."
+            else:
+                aturan_pengecoh_jodoh = f"- Untuk soal Menjodohkan, jumlah pilihan di lajur kanan sama persis dengan jumlah pertanyaan di lajur kiri ({pasangan_jodoh} pilihan) tanpa ada pengecoh."
 
             prompt_system = f"""
 Anda adalah pakar penyusun soal Asesmen Kurikulum Merdeka SD/MI yang sangat teliti.
@@ -225,7 +226,7 @@ INFORMASI UJIAN:
 ATURAN KERAHASIAAN KUNCI JAWABAN (SANGAT PENTING):
 1. DILARANG KERAS menuliskan kunci jawaban, tanda panah penghubung jawaban, atau petunjuk pasangan yang benar langsung di bagian lembar soal siswa.
 2. Khusus untuk soal **Menjodohkan**: 
-   - Buat tabel soal yang terpisah antara Kolom Pertanyaan (Lajur Kiri) dan Kolom Opsi Acak (Lajur Kanan, diurutkan secara acak dengan huruf/angka misal A, B, C, D atau 1, 2, 3, 4).
+   - Buat tabel soal yang terpisah antara Kolom Pertanyaan (Lajur Kiri) dan Kolom Opsi Acak (Lajur Kanan, diurutkan secara acak dengan huruf/angka misal A, B, C, D, dst.).
    {aturan_pengecoh_jodoh}
    - Jangan menyambungkan atau memasangkan langsung kunci jawaban pada tabel soal siswa. 
    - Kunci jawaban yang tepat untuk soal menjodohkan HANYA dituliskan di bagian akhir pada bagian "Kunci Jawaban & Pedoman Penskoran".
@@ -259,7 +260,7 @@ KOMPOSISI SOAL:
 1. Pilihan Ganda: {jml_pg} soal, tiap soal memiliki {opsi_pg} opsi jawaban (A, B, C, dst.).
 2. Pilihan Ganda Kompleks: {jml_pgk} soal, tiap soal memiliki {pernyataan_pgk} pernyataan.
 3. Benar / Salah: {jml_bs} soal, tiap nomor terdiri dari {pernyataan_bs} pernyataan.
-4. Menjodohkan: {jml_jodoh} paket soal, tiap paket memiliki {pasangan_jodoh} pernyataan lajur kiri dan opsi lajur kanan (dengan opsi pengecoh sesuai aturan di atas, TANPA KUNCI JAWABAN DI SOAL).
+4. Menjodohkan: {jml_jodoh} paket soal, tiap paket memiliki {pasangan_jodoh} pernyataan lajur kiri dan {total_opsi_kanan} opsi lajur kanan (termasuk {jumlah_pengecoh_jodoh} pengecoh, TANPA KUNCI JAWABAN DI SOAL).
 5. Isian Singkat: {jml_isian} soal.
 6. Uraian / Essay: {jml_uraian} soal.
 
@@ -271,7 +272,7 @@ STRUKTUR KELUARAN (MARKDOWN):
 5. Bagian D: Menjodohkan (Hanya tabel soal & pilihan acak, TANPA kunci jawaban/pasangan langsung)
 6. Bagian E: Isian Singkat
 7. Bagian F: Uraian
-8. Kunci Jawaban & Pedoman Penskoran/Rubrik (Termasuk pasangan lengkap untuk soal Menjodohkan dan penjelasan mana opsi yang menjadi pengecoh)
+8. Kunci Jawaban & Pedoman Penskoran/Rubrik (Termasuk pasangan lengkap untuk soal Menjodohkan dan penjelasan mana opsi yang bertindak sebagai pengecoh)
 9. Tabel Kisi-Kisi Soal (Nomor Soal, CP/Materi, Indikator Soal, Bentuk Soal, Level Kognitif L1/L2/L3).
 """
             with st.spinner("AI sedang mendesain naskah soal variatif & kisi-kisi... Mohon tunggu..."):
